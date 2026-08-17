@@ -66,4 +66,4 @@ java -jar target/LightHouse-1.0-SNAPSHOT.jar
 
 ## Documentation
 
-Protocol Documentation can be found [here](https://cydia.skyglow.es/tweaks/Notifications/Documentation/).
+Protocol Documentation can be found [here](https://cydia.skyglow.es/tweaks/Notifications/Documentation/protocol.html).
