@@ -67,4 +67,7 @@ java -jar target/LightHouse-1.0-SNAPSHOT.jar
 
 ## Documentation
 
+Client can be hound [here](https://github.com/ObscureMosquito/Skyglow-Notifications-Client).
+
+
 Protocol Documentation can be found [here](https://cydia.skyglow.es/tweaks/Notifications/Documentation/protocol.html).
