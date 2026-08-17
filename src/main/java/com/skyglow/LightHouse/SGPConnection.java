@@ -37,11 +37,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.zip.Deflater;
 
-/**
- * Drives the SGP/2 protocol for one client on its own virtual thread: frame
- * I/O, the registration and authentication state machine, keep-alive, and
- * writing routed notifications to the socket.
- */
 public final class SGPConnection implements Runnable {
 
     private static final Logger log = LoggerFactory.getLogger(SGPConnection.class);
@@ -49,48 +44,27 @@ public final class SGPConnection implements Runnable {
     private enum State { CONNECTED, REGISTERING, AUTHENTICATING, AUTHENTICATED, CLOSED }
 
     private record OutboundFrame(byte type, byte[] payload) {}
+    
     private static final OutboundFrame POISON = new OutboundFrame(MsgType.S_DISCONNECT, null);
-
     private static final int MAX_FILTER_ENTRIES  = 5000;
     private static final int MAX_BUNDLE_ID_BYTES = 255;
-
-    /** Skew past which a post-auth S_TIME_SYNC corrects the client clock. */
     private static final long TIME_SYNC_THRESHOLD_SEC = 2;
-
-    /**
-     * Replay is impossible regardless of the timestamp, since the signature
-     * covers a fresh nonce, so this is only a sanity bound. It is set to the
-     * largest offset a client accepts from S_TIME_SYNC. Rejecting at the 300 s
-     * challenge window would permanently brick drifted devices: AUTH_FAIL is
-     * terminal to the client and S_TIME_SYNC is only accepted after
-     * authenticating.
-     */
     private static final long MAX_AUTH_SKEW_SEC = 172_800;
-
     private static final int ADDR_ALLOC_ATTEMPTS = 5;
-
-    /** Generous: first-time registration may block on RSA-2048 keygen on old hardware. */
     private static final int HANDSHAKE_TIMEOUT_MS = 300 * 1000;
-
-    /** The client's adaptive keep-alive legitimately goes quiet for 600 to 3600 s. */
-    private static final int IDLE_PROBE_TIMEOUT_MS =
-            (SGPProtocol.PING_INTERVAL_SEC + SGPProtocol.PONG_TIMEOUT_SEC) * 1000;
-
-    private static final int  PROBE_GRACE_MS     = SGPProtocol.PONG_TIMEOUT_SEC * 1000;
+    private static final int IDLE_PROBE_TIMEOUT_MS = (SGPProtocol.PING_INTERVAL_SEC + SGPProtocol.PONG_TIMEOUT_SEC) * 1000;
+    private static final int  PROBE_GRACE_MS = SGPProtocol.PONG_TIMEOUT_SEC * 1000;
     private static final int  COMPRESS_MIN_BYTES = 256;
     private static final long ENQUEUE_TIMEOUT_MS = 5_000;
-
-    private final SSLSocket    socket;
+    private final SSLSocket socket;
     private final ServerConfig config;
-    private final Database     db;
-    private final Router       router;
+    private final Database db;
+    private final Router router;
     private final ServerEvents events;
     private final SecureRandom rng = new SecureRandom();
-
     private final LinkedBlockingQueue<OutboundFrame> sendQueue = new LinkedBlockingQueue<>(256);
     private DataInputStream in;
     private OutputStream    out;
-
     private volatile State state = State.CONNECTED;
     private String  deviceAddress;
     private Device  device;
@@ -98,13 +72,9 @@ public final class SGPConnection implements Runnable {
     private long    loginTimestamp;
     private byte[]  pendingRegPubKeyDer;
     private String  regCertSubject;
-
-    /** Accumulates C_FILTER chunks until the final has_more = 0 chunk arrives. */
     private List<Registration> pendingFilterEntries;
-
     private boolean probeOutstanding = false;
     private long    probeSeq = 0;
-
     private Consumer<NotificationEnvelope> routerCallback;
 
     public SGPConnection(SSLSocket socket, ServerConfig config, Database db, Router router, ServerEvents events) {
