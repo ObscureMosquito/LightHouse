@@ -1,4 +1,5 @@
 <div align="center">
+<img src="https://github.com/ObscureMosquito/Skyglow-Notifications-Client/blob/main/SGNPreferenceBundle/Resources/icon-settings.png" width=20% height=20%>
 <h1>LightHouse</h1>
 </div>
 
